@@ -1,0 +1,313 @@
+{% extends "base.html" %}
+{% block title %}İhaleler · Türkiye İhale Takip{% endblock %}
+{% block content %}
+
+<!-- Header Section -->
+<div class="row align-items-center justify-content-between mb-4 g-3">
+  <div class="col-12 col-md-auto">
+    <h3 class="mb-1 fw-bold text-dark d-flex align-items-center gap-2">
+      <i class="bi bi-list-ul text-primary"></i> İhale Listesi
+    </h3>
+    <p class="text-muted small mb-0">Toplam <strong>{{ total_count }}</strong> kayıt listeleniyor · {{ applied_province }}</p>
+  </div>
+  <div class="col-12 col-md-auto d-flex gap-2">
+    <button id="exportSelectedBtn" class="btn btn-outline-success px-4 d-none">
+      <i class="bi bi-check-all"></i> Seçilenleri Excel İndir
+    </button>
+    <a class="btn btn-success px-4" href="{% url 'export_excel' %}?{{ querystring }}">
+      <i class="bi bi-file-earmark-excel-fill"></i> Tümünü Excel İndir
+    </a>
+  </div>
+</div>
+
+<!-- Filters Panel -->
+<div class="card border-0 mb-4">
+  <div class="card-body p-4">
+    <form method="get" id="filter-form">
+      <h5 class="fw-bold text-dark mb-3"><i class="bi bi-sliders2-vertical text-primary me-2"></i> Filtreleme Seçenekleri</h5>
+      
+      <!-- Primary Filters (Always Visible) -->
+      <div class="row g-3">
+        <div class="col-12 col-md-3">
+          <label class="form-label d-flex align-items-center gap-1.5"><i class="bi bi-geo-alt text-primary"></i> {{ form.province.label }}</label>
+          {{ form.province }}
+        </div>
+        <div class="col-12 col-md-3">
+          <label class="form-label d-flex align-items-center gap-1.5"><i class="bi bi-geo text-primary"></i> {{ form.district.label }}</label>
+          {{ form.district }}
+        </div>
+        <div class="col-12 col-md-3">
+          <label class="form-label d-flex align-items-center gap-1.5"><i class="bi bi-tag text-primary"></i> {{ form.category.label }}</label>
+          {{ form.category }}
+        </div>
+        <div class="col-12 col-md-3">
+          <label class="form-label d-flex align-items-center gap-1.5"><i class="bi bi-briefcase text-primary"></i> {{ form.tender_type.label }}</label>
+          {{ form.tender_type }}
+        </div>
+      </div>
+      
+      <!-- Collapsible Advanced Filters Section -->
+      <div class="collapse mt-3" id="advancedFilters">
+        <div class="pt-3 border-top mt-3">
+          <div class="row g-3">
+            <div class="col-12 col-md-3">
+              <label class="form-label">{{ form.search.label }}</label>
+              {{ form.search }}
+            </div>
+            <div class="col-12 col-md-3">
+              <label class="form-label">{{ form.authority_name.label }}</label>
+              {{ form.authority_name }}
+            </div>
+            <div class="col-12 col-md-3">
+              <label class="form-label">{{ form.keyword.label }}</label>
+              {{ form.keyword }}
+            </div>
+            <div class="col-12 col-md-3">
+              <label class="form-label">{{ form.status.label }}</label>
+              {{ form.status }}
+            </div>
+            
+            <div class="col-12 col-md-3">
+              <label class="form-label">{{ form.date_from.label }}</label>
+              {{ form.date_from }}
+            </div>
+            <div class="col-12 col-md-3">
+              <label class="form-label">{{ form.date_to.label }}</label>
+              {{ form.date_to }}
+            </div>
+            
+            <div class="col-12 col-md-6 d-flex align-items-center mt-md-5">
+              <div class="d-flex gap-4">
+                <div class="form-check form-switch">
+                  {{ form.today_only }}
+                  <label class="form-check-label fw-semibold" for="{{ form.today_only.id_for_label }}">{{ form.today_only.label }}</label>
+                </div>
+                <div class="form-check form-switch">
+                  {{ form.this_week_only }}
+                  <label class="form-check-label fw-semibold" for="{{ form.this_week_only.id_for_label }}">{{ form.this_week_only.label }}</label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Filter Controls Panel -->
+      <div class="mt-4 d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-primary px-4"><i class="bi bi-funnel-fill"></i> Filtreleri Uygula</button>
+          <a href="{% url 'tender_list' %}" class="btn btn-outline-primary" style="border-color: var(--border-color); color: var(--text-main);"><i class="bi bi-x-circle"></i> Temizle</a>
+        </div>
+        
+        <button type="button" class="btn btn-outline-primary" data-bs-toggle="collapse" data-bs-target="#advancedFilters" aria-expanded="false" aria-controls="advancedFilters">
+          <i class="bi bi-sliders"></i> Gelişmiş Filtreler
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Tender Table Card -->
+<div class="card border-0">
+  <div class="table-responsive border-0 px-2 pb-2">
+    <table class="table table-hover align-middle">
+      <thead>
+        <tr>
+          <th width="3%"><input type="checkbox" id="selectAllTenders" class="form-check-input"></th>
+          <th width="10%">
+            <a href="?{{ querystring }}&sort=ikn&direction={% if request.GET.sort == 'ikn' and request.GET.direction == 'asc' %}desc{% else %}asc{% endif %}" class="text-decoration-none text-dark d-flex align-items-center gap-1">
+              Kayıt No
+              {% if request.GET.sort == 'ikn' %}
+                {% if request.GET.direction == 'asc' %}<i class="bi bi-arrow-up-short text-primary"></i>{% else %}<i class="bi bi-arrow-down-short text-primary"></i>{% endif %}
+              {% else %}
+                <i class="bi bi-arrow-down-up text-muted" style="font-size: 0.8rem;"></i>
+              {% endif %}
+            </a>
+          </th>
+          <th width="35%">
+            <a href="?{{ querystring }}&sort=title&direction={% if request.GET.sort == 'title' and request.GET.direction == 'asc' %}desc{% else %}asc{% endif %}" class="text-decoration-none text-dark d-flex align-items-center gap-1">
+              İhale Başlığı
+              {% if request.GET.sort == 'title' %}
+                {% if request.GET.direction == 'asc' %}<i class="bi bi-arrow-up-short text-primary"></i>{% else %}<i class="bi bi-arrow-down-short text-primary"></i>{% endif %}
+              {% else %}
+                <i class="bi bi-arrow-down-up text-muted" style="font-size: 0.8rem;"></i>
+              {% endif %}
+            </a>
+          </th>
+          <th width="18%">İdare Adı</th>
+          <th width="12%">
+            <a href="?{{ querystring }}&sort=province&direction={% if request.GET.sort == 'province' and request.GET.direction == 'asc' %}desc{% else %}asc{% endif %}" class="text-decoration-none text-dark d-flex align-items-center gap-1">
+              İl/İlçe
+              {% if request.GET.sort == 'province' %}
+                {% if request.GET.direction == 'asc' %}<i class="bi bi-arrow-up-short text-primary"></i>{% else %}<i class="bi bi-arrow-down-short text-primary"></i>{% endif %}
+              {% else %}
+                <i class="bi bi-arrow-down-up text-muted" style="font-size: 0.8rem;"></i>
+              {% endif %}
+            </a>
+          </th>
+          <th width="12%">Tür / Durum</th>
+          <th width="10%">
+            <a href="?{{ querystring }}&sort=date&direction={% if request.GET.sort == 'date' and request.GET.direction == 'asc' %}desc{% else %}asc{% endif %}" class="text-decoration-none text-dark d-flex align-items-center gap-1">
+              İlan Tarihi
+              {% if request.GET.sort == 'date' %}
+                {% if request.GET.direction == 'asc' %}<i class="bi bi-arrow-up-short text-primary"></i>{% else %}<i class="bi bi-arrow-down-short text-primary"></i>{% endif %}
+              {% else %}
+                <i class="bi bi-arrow-down-up text-muted" style="font-size: 0.8rem;"></i>
+              {% endif %}
+            </a>
+          </th>
+          <th width="3%"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in page_obj %}
+          <tr {% if t.keyword_matches %}class="table-warning" style="background-color: #FFFDF0;"{% endif %}>
+            <td>
+              <input type="checkbox" name="tender_ids" value="{{ t.pk }}" class="form-check-input tender-checkbox">
+            </td>
+            <td class="fw-bold text-muted small">{{ t.tender_no }}</td>
+            <td class="fw-semibold text-dark">
+              {{ t.title|truncatechars:65 }}
+              {% if t.keyword_matches %}
+                <div class="mt-1">
+                  {% for kw in t.keyword_matches.split %}
+                    <span class="badge bg-warning text-dark me-1" style="font-size: 0.70rem; font-weight: 600;"><i class="bi bi-star-fill"></i> Eşleşti: {{ kw }}</span>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            </td>
+            <td class="small text-muted">{{ t.authority_name|truncatechars:35 }}</td>
+            <td class="small text-secondary">
+              <strong>{{ t.province }}</strong>
+              {% if t.district %}<br><span class="text-muted" style="font-size: 0.8rem;">{{ t.district }}</span>{% endif %}
+            </td>
+            <td>
+              <span class="badge bg-primary-subtle text-primary mb-1 d-block text-center" style="font-size: 0.75rem;">{{ t.get_procurement_type_display|default:t.tender_type }}</span>
+              {% if t.status == 'aktif' %}
+                <span class="badge bg-success-subtle text-success d-block text-center" style="font-size: 0.75rem;">Aktif / Açık</span>
+              {% elif t.status == 'iptal' %}
+                <span class="badge bg-danger-subtle text-danger d-block text-center" style="font-size: 0.75rem;">İptal</span>
+              {% elif t.status == 'sonuclandi' %}
+                <span class="badge bg-info-subtle text-info d-block text-center" style="font-size: 0.75rem;">Sonuçlandı</span>
+              {% elif t.status == 'kesinlesti' %}
+                <span class="badge bg-primary-subtle text-primary d-block text-center" style="font-size: 0.75rem;">Kesinleşti</span>
+              {% elif t.status == 'duzeltme' %}
+                <span class="badge bg-warning-subtle text-warning d-block text-center" style="font-size: 0.75rem;">Düzeltme</span>
+              {% else %}
+                <span class="badge bg-secondary-subtle text-secondary d-block text-center" style="font-size: 0.75rem;">{{ t.get_status_display }}</span>
+              {% endif %}
+            </td>
+            <td class="small text-secondary fw-semibold">{{ t.announcement_date|date:"d.m.Y" }}</td>
+            <td class="text-end">
+              <div class="d-inline-flex gap-1.5">
+                <a href="{% url 'tender_detail' t.pk %}" class="btn btn-sm btn-outline-primary detail-modal-btn" style="padding: 0.25rem 0.50rem;" title="Detaylar">
+                  <i class="bi bi-eye-fill"></i> Detay
+                </a>
+                <a href="{% url 'export_excel' %}?pk={{ t.pk }}" class="btn btn-sm btn-outline-success" style="padding: 0.25rem 0.50rem;" title="Excel İndir">
+                  <i class="bi bi-file-earmark-excel"></i> Excel
+                </a>
+              </div>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="8" class="text-center text-muted py-5">
+              <i class="bi bi-search-heart" style="font-size: 2.5rem;"></i>
+              <p class="mt-2 mb-0">Arama kriterlerinize uygun herhangi bir ihale bulunamadı.</p>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Pagination Panel -->
+{% if page_obj.paginator.num_pages > 1 %}
+<nav class="mt-4">
+  <ul class="pagination justify-content-center gap-1.5">
+    {% if page_obj.has_previous %}
+      <li class="page-item">
+        <a class="page-link border-0 rounded-circle text-primary bg-white d-flex align-items-center justify-content-center" href="?{{ querystring }}&page={{ page_obj.previous_page_number }}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}{% if request.GET.direction %}&direction={{ request.GET.direction }}{% endif %}" style="width: 38px; height: 38px;" title="Önceki">
+          <i class="bi bi-chevron-left"></i>
+        </a>
+      </li>
+    {% endif %}
+    
+    <li class="page-item disabled">
+      <span class="page-link border-0 rounded-pill bg-white text-dark fw-bold px-3 py-2">
+        {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+      </span>
+    </li>
+    
+    {% if page_obj.has_next %}
+      <li class="page-item">
+        <a class="page-link border-0 rounded-circle text-primary bg-white d-flex align-items-center justify-content-center" href="?{{ querystring }}&page={{ page_obj.next_page_number }}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}{% if request.GET.direction %}&direction={{ request.GET.direction }}{% endif %}" style="width: 38px; height: 38px;" title="Sonraki">
+          <i class="bi bi-chevron-right"></i>
+        </a>
+      </li>
+    {% endif %}
+  </ul>
+</nav>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const selectAllCheckbox = document.getElementById("selectAllTenders");
+    const tenderCheckboxes = document.querySelectorAll(".tender-checkbox");
+    const exportSelectedBtn = document.getElementById("exportSelectedBtn");
+
+    function updateExportBtnVisibility() {
+      const checkedIds = Array.from(tenderCheckboxes)
+        .filter(cb => cb.checked)
+        .map(cb => cb.value);
+      
+      if (checkedIds.length > 0) {
+        exportSelectedBtn.classList.remove("d-none");
+        exportSelectedBtn.innerHTML = `<i class="bi bi-file-earmark-excel-fill"></i> Seçilenleri Excel İndir (${checkedIds.length})`;
+      } else {
+        exportSelectedBtn.classList.add("d-none");
+      }
+    }
+
+    if (selectAllCheckbox) {
+      selectAllCheckbox.addEventListener("change", function () {
+        tenderCheckboxes.forEach(cb => {
+          cb.checked = selectAllCheckbox.checked;
+        });
+        updateExportBtnVisibility();
+      });
+    }
+
+    tenderCheckboxes.forEach(cb => {
+      cb.addEventListener("change", function () {
+        if (!cb.checked) {
+          selectAllCheckbox.checked = false;
+        } else {
+          const allChecked = Array.from(tenderCheckboxes).every(c => c.checked);
+          selectAllCheckbox.checked = allChecked;
+        }
+        updateExportBtnVisibility();
+      });
+    });
+
+    if (exportSelectedBtn) {
+      exportSelectedBtn.addEventListener("click", function () {
+        const checkedIds = Array.from(tenderCheckboxes)
+          .filter(cb => cb.checked)
+          .map(cb => cb.value);
+        
+        if (checkedIds.length > 0) {
+          const pks = checkedIds.join(",");
+          const exportUrl = "{% url 'export_excel' %}?pks=" + pks;
+          window.location.href = exportUrl;
+        }
+      });
+    }
+  });
+</script>
+{% endblock %}
+

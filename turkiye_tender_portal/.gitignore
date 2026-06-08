@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+*.sqlite3
+db.sqlite3
+.env
+.venv/
+venv/
+env/
+/exports/excel/*.xlsx
+/logs/*.log
+.DS_Store
+*.egg-info/
+.idea/
+.vscode/
+staticfiles/

@@ -1,0 +1,110 @@
+<div class="modal-header bg-light">
+  <h5 class="modal-title fw-bold text-dark d-flex align-items-center gap-2" id="tenderModalLabel">
+    <i class="bi bi-file-earmark-text text-primary"></i> İhale Detayı [{{ tender.tender_no }}]
+  </h5>
+  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+</div>
+<div class="modal-body p-4">
+  <div class="row g-4">
+    <!-- Left Column: Key Metadata Table -->
+    <div class="col-12 col-md-7">
+      <h6 class="fw-bold text-primary mb-3 d-flex align-items-center gap-1.5">
+        <i class="bi bi-info-circle"></i> Temel Bilgiler
+      </h6>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle table-sm border-top" style="font-size: 0.9rem;">
+          <tbody>
+            <tr>
+              <td class="text-muted fw-semibold py-2" width="40%">İhale Kayıt No (İKN)</td>
+              <td class="text-dark fw-bold py-2">{{ tender.tender_no }}</td>
+            </tr>
+            <tr>
+              <td class="text-muted fw-semibold py-2">İdare Adı</td>
+              <td class="text-dark py-2">{{ tender.authority_name }}</td>
+            </tr>
+            <tr>
+              <td class="text-muted fw-semibold py-2">İl / İlçe</td>
+              <td class="text-dark py-2 fw-medium">{{ tender.province }}{% if tender.district %} / {{ tender.district }}{% endif %}</td>
+            </tr>
+            <tr>
+              <td class="text-muted fw-semibold py-2">İhale Usulü</td>
+              <td class="text-dark py-2">{{ tender.get_tender_procedure_display|default:"-" }}</td>
+            </tr>
+            <tr>
+              <td class="text-muted fw-semibold py-2">İlan Tarihi</td>
+              <td class="text-dark py-2">{{ tender.announcement_date|date:"d.m.Y"|default:"-" }}</td>
+            </tr>
+            <tr>
+              <td class="text-muted fw-semibold py-2">İhale Tarihi</td>
+              <td class="text-dark py-2">{{ tender.tender_date|date:"d.m.Y"|default:"-" }}</td>
+            </tr>
+            <tr>
+              <td class="text-muted fw-semibold py-2">Son Teklif Tarihi</td>
+              <td class="text-dark py-2">{{ tender.deadline_date|date:"d.m.Y"|default:"-" }}</td>
+            </tr>
+            <tr>
+              <td class="text-muted fw-semibold py-2">İşin Yapılacağı Yer</td>
+              <td class="text-dark py-2">{{ tender.work_location|default:"-" }}</td>
+            </tr>
+            <tr>
+              <td class="text-muted fw-semibold py-2">Veri Kaynağı</td>
+              <td class="py-2"><span class="badge bg-secondary-subtle text-secondary">{{ tender.get_source_display }}</span></td>
+            </tr>
+            <tr>
+              <td class="text-muted fw-semibold py-2">Durum</td>
+              <td class="py-2">
+                {% if tender.status == 'aktif' %}
+                  <span class="badge bg-success-subtle text-success">Aktif / Açık</span>
+                {% elif tender.status == 'iptal' %}
+                  <span class="badge bg-danger-subtle text-danger">İptal</span>
+                {% elif tender.status == 'sonuclandi' %}
+                  <span class="badge bg-info-subtle text-info">Sonuçlandı</span>
+                {% elif tender.status == 'kesinlesti' %}
+                  <span class="badge bg-primary-subtle text-primary">Kesinleşti</span>
+                {% elif tender.status == 'duzeltme' %}
+                  <span class="badge bg-warning-subtle text-warning">Düzeltme</span>
+                {% else %}
+                  <span class="badge bg-secondary-subtle text-secondary">{{ tender.get_status_display }}</span>
+                {% endif %}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+    <!-- Right Column: Description & Matches -->
+    <div class="col-12 col-md-5">
+      <h6 class="fw-bold text-primary mb-3 d-flex align-items-center gap-1.5">
+        <i class="bi bi-file-text"></i> Kısa Açıklama
+      </h6>
+      <div class="text-secondary border p-3 rounded bg-light mb-3" style="max-height: 250px; overflow-y: auto; font-size: 0.88rem; line-height: 1.5;">
+        {{ tender.short_description|default:"Açıklama bulunmuyor."|linebreaksbr }}
+      </div>
+      
+      {% if tender.keyword_matches %}
+      <h6 class="fw-bold text-warning mb-2 d-flex align-items-center gap-1.5">
+        <i class="bi bi-star-fill"></i> Eşleşen Anahtar Kelimeler
+      </h6>
+      <div class="d-flex flex-wrap gap-1.5">
+        {% for kw in tender.keyword_matches.split %}
+          <span class="badge bg-warning-subtle text-warning py-1.5 px-2.5" style="font-size: 0.8rem;">{{ kw }}</span>
+        {% empty %}
+          {{ tender.keyword_matches }}
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+<div class="modal-footer bg-light">
+  {% if tender.official_url %}
+    <a href="{{ tender.official_url }}" target="_blank" rel="noopener" class="btn btn-primary btn-sm px-3">
+      <i class="bi bi-box-arrow-up-right me-1"></i> Resmî EKAP Sayfası
+    </a>
+  {% endif %}
+  <a href="{% url 'export_excel' %}?pk={{ tender.pk }}" class="btn btn-success btn-sm px-3">
+    <i class="bi bi-file-earmark-excel-fill me-1"></i> Excel İndir
+  </a>
+  <button type="button" class="btn btn-secondary btn-sm px-3" data-bs-dismiss="modal">Kapat</button>
+</div>

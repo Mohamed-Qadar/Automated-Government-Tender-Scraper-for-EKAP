@@ -1,0 +1,33 @@
+# Python build/cache
+**/__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments
+.env
+.venv/
+venv/
+env/
+ENV/
+
+# Databases
+*.sqlite3
+db.sqlite3
+
+# Local settings / system files
+.DS_Store
+.idea/
+.vscode/
+
+# Scraper output exports
+**/exports/excel/*.xlsx
+
+# Logs
+**/logs/*.log
+*.log
+
+# Distribution / Packaging
+dist/
+build/
+*.egg-info/
+/staticfiles/

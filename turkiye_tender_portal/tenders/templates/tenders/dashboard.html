@@ -1,0 +1,397 @@
+{% extends "base.html" %}
+{% block title %}Panel · Türkiye İhale Takip{% endblock %}
+{% block content %}
+
+<!-- Header Section -->
+<div class="row align-items-center justify-content-between mb-4 g-3">
+  <div class="col-12 col-md-auto">
+    <h3 class="mb-1 fw-extrabold text-dark d-flex align-items-center gap-2">
+      <i class="bi bi-speedometer2 text-primary"></i> Genel Kontrol Paneli
+    </h3>
+    <p class="text-muted small mb-0">İhale portalı genel istatistikleri ve son veriler</p>
+  </div>
+  <div class="col-12 col-md-auto">
+    {% if profile %}
+      <div class="d-inline-flex align-items-center gap-2 bg-white px-3.5 py-2 border rounded-pill shadow-sm">
+        <i class="bi bi-calendar-check-fill text-info"></i>
+        <span class="text-muted small">Abonelik Bitiş:</span>
+        <strong class="text-dark">{{ profile.subscription_end_date|date:"d.m.Y"|default:"Süresiz" }}</strong>
+        {% if profile.days_remaining is not None %}
+          <span class="badge bg-info-subtle text-info rounded-pill px-2.5">{{ profile.days_remaining }} gün kaldı</span>
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Filters Panel -->
+<div class="card border-0 mb-4">
+  <div class="card-body p-4">
+    <h5 class="fw-bold text-dark mb-3"><i class="bi bi-sliders2-vertical text-primary me-2"></i> Hızlı Filtrele</h5>
+    <form method="get" class="row g-3 align-items-end">
+      <div class="col-12 col-md-5">
+        <label class="form-label d-flex align-items-center gap-1.5"><i class="bi bi-geo-alt-fill text-primary"></i> İl Seçimi</label>
+        <select name="province" class="form-select">
+          <option value="ALL" {% if selected_province == "ALL" %}selected{% endif %}>Tüm Türkiye</option>
+          {% for p in provinces %}
+            <option value="{{ p.name }}" {% if selected_province == p.name %}selected{% endif %}>{{ p.plate_code }} - {{ p.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-12 col-md-4">
+        <label class="form-label d-flex align-items-center gap-1.5"><i class="bi bi-tag-fill text-primary"></i> Kategori</label>
+        <select name="category" class="form-select">
+          <option value="">Tüm Kategoriler</option>
+          {% for val,label in category_choices %}
+            <option value="{{ val }}" {% if selected_category == val %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-12 col-md-3 d-flex gap-2">
+        <button class="btn btn-primary w-100"><i class="bi bi-funnel"></i> Filtrele</button>
+        <a href="{% url 'dashboard' %}" class="btn btn-outline-primary w-50" title="Temizle"><i class="bi bi-x-circle"></i> Sıfırla</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Quick filter pill links -->
+<div class="mb-4">
+  <div class="text-muted small fw-bold mb-2 text-uppercase"><i class="bi bi-lightning-fill text-warning me-1"></i> Hızlı Erişim Linkleri</div>
+  <div class="d-flex flex-wrap gap-2">
+    {% for label,qs in quick_filters %}
+      <a href="{% url 'tender_list' %}{{ qs }}" class="quick-chip">{{ label }}</a>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Stats Counter Grid -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-3">
+    <div class="card stat-card stat-primary border-0 h-100">
+      <div class="card-body">
+        <div class="stat-icon"><i class="bi bi-collection-fill"></i></div>
+        <div class="stat-value">{{ total_tenders }}</div>
+        <div class="stat-label">Toplam İhale</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="card stat-card stat-success border-0 h-100">
+      <div class="card-body">
+        <div class="stat-icon"><i class="bi bi-calendar-event-fill"></i></div>
+        <div class="stat-value">{{ new_today }}</div>
+        <div class="stat-label">Bugün Eklenen</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="card stat-card stat-warning border-0 h-100">
+      <div class="card-body">
+        <div class="stat-icon"><i class="bi bi-calendar-week-fill"></i></div>
+        <div class="stat-value">{{ new_week }}</div>
+        <div class="stat-label">Bu Hafta Eklenen</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="card stat-card stat-info border-0 h-100">
+      <div class="card-body">
+        <div class="stat-icon"><i class="bi bi-funnel-fill"></i></div>
+        <div class="stat-value">{{ scoped_total }}</div>
+        <div class="stat-label">Filtrelenmiş İhale</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Operations Control Deck -->
+<div class="row g-3 mb-4">
+  <div class="col-12 col-lg-7">
+    <div class="card border-0 h-100">
+      <div class="card-body d-flex flex-column justify-content-between p-4">
+        <div>
+          <h5 class="fw-bold text-dark mb-3 d-flex align-items-center justify-content-between">
+            <span class="d-flex align-items-center gap-2">
+              <i class="bi bi-arrow-repeat text-primary"></i> Son Veri Çekim Bilgisi
+            </span>
+            <span class="badge bg-{% if ekap_data_mode == 'live' %}success{% else %}warning{% endif %}-subtle text-{% if ekap_data_mode == 'live' %}success{% else %}warning{% endif %} px-2.5 py-1 rounded-pill" style="font-size: 0.75rem;">
+              <i class="bi bi-broadcast"></i> EKAP Modu: {{ ekap_data_mode|upper }}
+            </span>
+          </h5>
+          {% if last_fetch %}
+            <div class="d-flex flex-wrap gap-3 align-items-center mb-3">
+              <div>
+                <span class="small text-muted me-1">Son İşlem:</span>
+                {% if last_fetch.status == "success" %}
+                  <span class="badge bg-success-subtle d-inline-flex align-items-center gap-1 py-1 px-2.5">
+                    <i class="bi bi-check-circle-fill"></i> Başarılı
+                  </span>
+                {% elif last_fetch.status == "failed" %}
+                  <span class="badge bg-danger-subtle d-inline-flex align-items-center gap-1 py-1 px-2.5">
+                    <i class="bi bi-x-circle-fill"></i> Başarısız
+                  </span>
+                {% else %}
+                  <span class="badge bg-info-subtle d-inline-flex align-items-center gap-1 py-1 px-2.5">
+                    <i class="bi bi-slash-circle-fill"></i> {{ last_fetch.get_status_display }}
+                  </span>
+                {% endif %}
+              </div>
+              {% if last_success_fetch %}
+              <div>
+                <span class="small text-muted me-1">Son Başarılı Çekim:</span>
+                <span class="text-success fw-bold small"><i class="bi bi-calendar2-check"></i> {{ last_success_fetch.started_at|date:"d.m.Y H:i" }}</span>
+              </div>
+              {% endif %}
+            </div>
+            
+            <table class="table table-sm table-borderless text-muted small mb-0">
+              <tr>
+                <td class="ps-0 py-1" width="35%">Çekim Tarihi/Saati</td>
+                <td class="text-dark fw-bold py-1">{{ last_fetch.started_at|date:"d.m.Y H:i" }}</td>
+              </tr>
+              <tr>
+                <td class="ps-0 py-1">Kaynak Sistem</td>
+                <td class="text-dark fw-bold py-1">{{ last_fetch.source }}</td>
+              </tr>
+              <tr>
+                <td class="ps-0 py-1">Çekilen / Yeni Kayıt</td>
+                <td class="text-dark py-1">
+                  <span class="badge bg-primary-subtle text-primary">{{ last_fetch.total_found }} Bulunan</span> · 
+                  <span class="badge bg-success-subtle text-success">{{ last_fetch.new_records }} Yeni</span> ·
+                  <span class="badge bg-warning-subtle text-warning">{{ last_fetch.duplicate_records }} Tekrar</span>
+                </td>
+              </tr>
+            </table>
+          {% else %}
+            <div class="text-center py-4 text-muted">
+              <i class="bi bi-exclamation-circle" style="font-size: 2rem;"></i>
+              <p class="mt-2 mb-0">Henüz bir veri çekim işlemi gerçekleştirilmedi.</p>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-12 col-lg-5">
+    <div class="card border-0 h-100">
+      <div class="card-body d-flex flex-column justify-content-center gap-3 p-4">
+        <h5 class="fw-bold text-dark mb-1"><i class="bi bi-gear-wide-connected text-primary me-2"></i> Hızlı İşlemler</h5>
+        <form method="post" action="{% url 'fetch_now' %}">
+          {% csrf_token %}
+          <input type="hidden" name="province" value="{{ selected_province }}">
+          <input type="hidden" name="category" value="{{ selected_category }}">
+          <input type="hidden" name="next" value="{% url 'dashboard' %}?province={{ selected_province }}">
+          <button class="btn btn-success w-100 py-2.5">
+            <i class="bi bi-cloud-arrow-down-fill"></i> Yeni İlanları Çek
+          </button>
+        </form>
+        
+        <a class="btn btn-outline-primary w-100 py-2.5" href="{% url 'export_excel' %}?province={{ selected_province }}{% if selected_category %}&category={{ selected_category }}{% endif %}">
+          <i class="bi bi-file-earmark-excel-fill"></i> Filtrelenenleri Excel İndir
+        </a>
+        
+        <a class="btn btn-outline-primary w-100 py-2.5" href="{% url 'subscription_expired' %}" style="border-color: var(--border-color); color: var(--text-main);">
+          <i class="bi bi-credit-card-fill text-muted"></i> Abonelik & Hesap Durumu
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Analytics Section (Charts) -->
+<div class="row g-4 mb-4">
+  <!-- Chart 1: Donut Chart for Tender Types -->
+  <div class="col-12 col-lg-5">
+    <div class="card border-0 h-100 shadow-sm">
+      <div class="card-header bg-white border-0 py-3 px-4">
+        <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+          <i class="bi bi-pie-chart-fill text-primary"></i> İhale Türü Dağılımı
+        </h5>
+      </div>
+      <div class="card-body p-4 pt-0 d-flex align-items-center justify-content-center" style="min-height: 250px;">
+        <canvas id="typeChart" style="max-height: 220px;"></canvas>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Chart 2: Bar Chart for Timeline -->
+  <div class="col-12 col-lg-7">
+    <div class="card border-0 h-100 shadow-sm">
+      <div class="card-header bg-white border-0 py-3 px-4">
+        <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+          <i class="bi bi-graph-up text-primary"></i> Son 10 Gün İhale Akış Grafiği
+        </h5>
+      </div>
+      <div class="card-body p-4 pt-0" style="min-height: 250px;">
+        <canvas id="timelineChart" style="max-height: 220px;"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Latest Tenders Table -->
+<div class="card border-0">
+  <div class="card-header bg-white d-flex justify-content-between align-items-center py-3 px-4 border-0">
+    <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+      <i class="bi bi-clock-history text-primary"></i> Son İhaleler {% if selected_province != "ALL" %}· {{ selected_province }}{% endif %}
+    </h5>
+    <a href="{% url 'tender_list' %}?province={{ selected_province }}" class="btn btn-sm btn-outline-primary px-3">
+      Tümünü Gör <i class="bi bi-arrow-right"></i>
+    </a>
+  </div>
+  
+  <div class="table-responsive border-0 px-2 pb-2">
+    <table class="table table-hover align-middle">
+      <thead>
+        <tr>
+          <th width="12%">Kayıt No</th>
+          <th width="45%">Başlık</th>
+          <th width="15%">İl/İlçe</th>
+          <th width="13%">Tür / Durum</th>
+          <th width="10%">İlan Tarihi</th>
+          <th width="5%"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in latest_tenders %}
+          <tr {% if t.keyword_matches %}class="table-warning" style="background-color: #FFFDF0;"{% endif %}>
+            <td class="fw-bold text-muted" style="font-size: 0.85rem;">{{ t.tender_no }}</td>
+            <td class="fw-semibold text-dark">
+              {{ t.title|truncatechars:65 }}
+              {% if t.keyword_matches %}
+                <div class="mt-1">
+                  {% for kw in t.keyword_matches.split %}
+                    <span class="badge bg-warning text-dark me-1" style="font-size: 0.70rem; font-weight: 600;"><i class="bi bi-star-fill"></i> Eşleşti: {{ kw }}</span>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            </td>
+            <td class="small text-secondary">{{ t.province }}{% if t.district %} / {{ t.district }}{% endif %}</td>
+            <td>
+              <span class="badge bg-primary-subtle text-primary mb-1 d-block text-center" style="font-size: 0.75rem;">{{ t.get_procurement_type_display|default:t.tender_type }}</span>
+              {% if t.status == 'aktif' %}
+                <span class="badge bg-success-subtle text-success d-block text-center" style="font-size: 0.75rem;">Aktif / Açık</span>
+              {% elif t.status == 'iptal' %}
+                <span class="badge bg-danger-subtle text-danger d-block text-center" style="font-size: 0.75rem;">İptal</span>
+              {% elif t.status == 'sonuclandi' %}
+                <span class="badge bg-info-subtle text-info d-block text-center" style="font-size: 0.75rem;">Sonuçlandı</span>
+              {% elif t.status == 'kesinlesti' %}
+                <span class="badge bg-primary-subtle text-primary d-block text-center" style="font-size: 0.75rem;">Kesinleşti</span>
+              {% elif t.status == 'duzeltme' %}
+                <span class="badge bg-warning-subtle text-warning d-block text-center" style="font-size: 0.75rem;">Düzeltme</span>
+              {% else %}
+                <span class="badge bg-secondary-subtle text-secondary d-block text-center" style="font-size: 0.75rem;">{{ t.get_status_display }}</span>
+              {% endif %}
+            </td>
+            <td class="small text-secondary fw-semibold">{{ t.announcement_date|date:"d.m.Y" }}</td>
+            <td class="text-end">
+              <div class="d-inline-flex gap-1.5">
+                <a href="{% url 'tender_detail' t.pk %}" class="btn btn-sm btn-outline-primary detail-modal-btn" style="padding: 0.25rem 0.50rem;" title="Detaylar">
+                  <i class="bi bi-eye-fill"></i> Detay
+                </a>
+                <a href="{% url 'export_excel' %}?pk={{ t.pk }}" class="btn btn-sm btn-outline-success" style="padding: 0.25rem 0.50rem;" title="Excel İndir">
+                  <i class="bi bi-file-earmark-excel"></i> Excel
+                </a>
+              </div>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="6" class="text-center text-muted py-5">
+              <i class="bi bi-folder-x" style="font-size: 2.5rem;"></i>
+              <p class="mt-2 mb-0">İhale kaydı bulunamadı. Lütfen "Yeni İlanları Çek" butonu ile veri yükleyin.</p>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    // 1. Donut Chart
+    const typeCtx = document.getElementById('typeChart');
+    if (typeCtx) {
+      const labels = {{ chart_types_labels|safe }};
+      const counts = {{ chart_types_counts|safe }};
+      
+      if (labels.length === 0) {
+        typeCtx.parentElement.innerHTML = '<div class="text-muted small"><i class="bi bi-info-circle"></i> Gösterilecek ihale türü verisi yok.</div>';
+      } else {
+        new Chart(typeCtx, {
+          type: 'doughnut',
+          data: {
+            labels: labels,
+            datasets: [{
+              data: counts,
+              backgroundColor: ['#1F4E78', '#2E75B6', '#BDD7EE', '#A5A5A5'],
+              borderWidth: 1
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: 'bottom',
+                labels: {
+                  boxWidth: 12,
+                  font: { size: 11 }
+                }
+              }
+            }
+          }
+        });
+      }
+    }
+
+    // 2. Timeline Chart
+    const timelineCtx = document.getElementById('timelineChart');
+    if (timelineCtx) {
+      const dates = {{ chart_dates|safe }};
+      const counts = {{ chart_counts|safe }};
+      
+      if (dates.length === 0) {
+        timelineCtx.parentElement.innerHTML = '<div class="text-muted small"><i class="bi bi-info-circle"></i> Gösterilecek ilan tarihi akış verisi yok.</div>';
+      } else {
+        new Chart(timelineCtx, {
+          type: 'bar',
+          data: {
+            labels: dates,
+            datasets: [{
+              label: 'İhale Sayısı',
+              data: counts,
+              backgroundColor: 'rgba(31, 78, 120, 0.85)',
+              borderColor: '#1F4E78',
+              borderWidth: 1,
+              borderRadius: 4
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: { stepSize: 1, font: { size: 10 } }
+              },
+              x: {
+                ticks: { font: { size: 10 } }
+              }
+            },
+            plugins: {
+              legend: { display: false }
+            }
+          }
+        });
+      }
+    }
+  });
+</script>
+{% endblock %}

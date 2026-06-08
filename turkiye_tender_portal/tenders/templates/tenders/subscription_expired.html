@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Abonelik · Türkiye İhale Takip{% endblock %}
+{% block content %}
+<div class="row justify-content-center align-items-center" style="min-height: 75vh;">
+  <div class="col-12 col-md-8 col-lg-6">
+    <div class="card border-0 shadow-lg text-center p-4">
+      <div class="card-body p-4">
+        <!-- Icon Badge -->
+        <div class="d-inline-flex align-items-center justify-content-center bg-warning-subtle text-warning rounded-circle mb-4" style="width: 80px; height: 80px;">
+          <i class="bi bi-credit-card-2-front-fill" style="font-size: 2.5rem;"></i>
+        </div>
+        
+        <h3 class="fw-bold text-dark mb-2">Aboneliğiniz Aktif Değil</h3>
+        
+        {% if profile %}
+          <div class="bg-light rounded p-3 mb-4 d-inline-block px-4">
+            <span class="text-muted small">Mevcut Durum:</span>
+            <strong class="text-danger d-block mt-1">{{ profile.get_subscription_status_display }}</strong>
+            {% if profile.subscription_end_date %}
+              <span class="text-muted small mt-2 d-block">Bitiş Tarihi: <strong>{{ profile.subscription_end_date|date:"d.m.Y" }}</strong></span>
+            {% endif %}
+          </div>
+        {% endif %}
+        
+        <p class="text-secondary mb-4" style="line-height: 1.6; font-size: 1rem;">
+          İhale takip sistemini, detay aramaları, listeleri ve Excel dışa aktarma fonksiyonlarını kullanabilmek için geçerli bir aboneliğe ihtiyacınız vardır.
+        </p>
+        
+        <div class="alert alert-info border-0 shadow-sm text-start mb-4 p-3 d-flex gap-2.5 align-items-start" style="border-radius: var(--radius-sm);">
+          <i class="bi bi-info-circle-fill text-info mt-0.5"></i>
+          <p class="mb-0 small text-dark">
+            Abonelik yenileme, süre uzatma ve ödeme işlemleri sistem yöneticisi tarafından manuel olarak gerçekleştirilmektedir. Lütfen yöneticinizle irtibata geçin.
+          </p>
+        </div>
+        
+        <form method="post" action="{% url 'logout' %}" class="d-inline">
+          {% csrf_token %}
+          <button class="btn btn-outline-danger px-4 py-2.5">
+            <i class="bi bi-box-arrow-right"></i> Çıkış Yap ve Geri Dön
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

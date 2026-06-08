@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}{{ tender.title|truncatechars:40 }} · İhale Detayı{% endblock %}
+{% block content %}
+
+<!-- Back Navigation Link -->
+<div class="mb-4">
+  <a href="{% url 'tender_list' %}" class="btn btn-outline-primary" style="border-color: var(--border-color); color: var(--text-main);">
+    <i class="bi bi-arrow-left"></i> Listeye Dön
+  </a>
+</div>
+
+<!-- Header Card -->
+<div class="card border-0 mb-4">
+  <div class="card-body p-4">
+    <div class="row align-items-start g-3">
+      <div class="col-12 col-md-9">
+        <span class="text-primary small fw-bold text-uppercase mb-1 d-block">İhale Detay Sayfası</span>
+        <h4 class="fw-extrabold text-dark mb-2">{{ tender.title }}</h4>
+        <p class="text-muted mb-0"><i class="bi bi-bank text-primary me-1.5"></i> {{ tender.authority_name }}</p>
+      </div>
+      <div class="col-12 col-md-3 d-flex flex-wrap gap-2 justify-content-md-end">
+        <span class="badge bg-primary-subtle text-primary py-2 px-3">{{ tender.get_procurement_type_display|default:tender.tender_type }}</span>
+        {% if tender.category %}
+          <span class="badge bg-info-subtle text-info py-2 px-3">{{ tender.get_category_display }}</span>
+        {% endif %}
+        {% if tender.status %}
+          <span class="badge bg-success-subtle text-success py-2 px-3">{{ tender.get_status_display }}</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Information Layout Grid -->
+<div class="row g-4">
+  <!-- Left Side: Core Metadata -->
+  <div class="col-12 col-lg-7">
+    <div class="card border-0 h-100">
+      <div class="card-header bg-white border-0 py-3 px-4">
+        <h5 class="fw-bold text-dark mb-0"><i class="bi bi-info-square text-primary me-2"></i> İhale Bilgileri</h5>
+      </div>
+      <div class="card-body p-4 pt-0">
+        <div class="table-responsive border-0">
+          <table class="table table-hover align-middle mb-0" style="border: none;">
+            <tbody>
+              <tr>
+                <td class="text-muted fw-semibold py-3 ps-0" width="40%">İhale Kayıt No</td>
+                <td class="text-dark fw-bold py-3">{{ tender.tender_no }}</td>
+              </tr>
+              <tr>
+                <td class="text-muted fw-semibold py-3 ps-0">İl</td>
+                <td class="text-dark py-3 fw-medium">{{ tender.province|default:"-" }}</td>
+              </tr>
+              <tr>
+                <td class="text-muted fw-semibold py-3 ps-0">İlçe</td>
+                <td class="text-dark py-3 fw-medium">{{ tender.district|default:"-" }}</td>
+              </tr>
+              <tr>
+                <td class="text-muted fw-semibold py-3 ps-0">İhale Usulü</td>
+                <td class="text-dark py-3 fw-medium">{{ tender.get_tender_procedure_display|default:"-" }}</td>
+              </tr>
+              <tr>
+                <td class="text-muted fw-semibold py-3 ps-0">İlan Tarihi</td>
+                <td class="text-dark py-3 fw-medium">{{ tender.announcement_date|date:"d.m.Y"|default:"-" }}</td>
+              </tr>
+              <tr>
+                <td class="text-muted fw-semibold py-3 ps-0">İhale Tarihi</td>
+                <td class="text-dark py-3 fw-medium">{{ tender.tender_date|date:"d.m.Y"|default:"-" }}</td>
+              </tr>
+              <tr>
+                <td class="text-muted fw-semibold py-3 ps-0">Son Teklif Tarihi</td>
+                <td class="text-dark py-3 fw-medium">{{ tender.deadline_date|date:"d.m.Y"|default:"-" }}</td>
+              </tr>
+              <tr>
+                <td class="text-muted fw-semibold py-3 ps-0">İşin Yapılacağı Yer</td>
+                <td class="text-dark py-3 fw-medium">{{ tender.work_location|default:"-" }}</td>
+              </tr>
+              <tr>
+                <td class="text-muted fw-semibold py-3 ps-0">Veri Kaynağı</td>
+                <td class="text-dark py-3 fw-medium"><span class="badge bg-secondary-subtle text-secondary">{{ tender.get_source_display }}</span></td>
+              </tr>
+              <tr>
+                <td class="text-muted fw-semibold py-3 ps-0">Sisteme Kayıt Tarihi</td>
+                <td class="text-dark py-3 fw-medium">{{ tender.created_at|date:"d.m.Y H:i" }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Side: Description and Actions -->
+  <div class="col-12 col-lg-5">
+    <div class="d-flex flex-column gap-4">
+      <!-- Short Description -->
+      <div class="card border-0">
+        <div class="card-header bg-white border-0 py-3 px-4">
+          <h5 class="fw-bold text-dark mb-0"><i class="bi bi-file-text text-primary me-2"></i> Kısa Açıklama</h5>
+        </div>
+        <div class="card-body p-4 pt-0">
+          <div class="text-secondary" style="line-height: 1.6; font-size: 0.95rem;">
+            {{ tender.short_description|default:"Açıklama bulunmuyor."|linebreaksbr }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Keyword Matches -->
+      {% if tender.keyword_matches %}
+      <div class="card border-0">
+        <div class="card-header bg-white border-0 py-3 px-4">
+          <h5 class="fw-bold text-dark mb-0"><i class="bi bi-search text-primary me-2"></i> Eşleşen Anahtar Kelimeler</h5>
+        </div>
+        <div class="card-body p-4 pt-0">
+          <div class="d-flex flex-wrap gap-2">
+            {% for kw in tender.keyword_matches.split %}
+              <span class="badge bg-warning-subtle text-warning py-1.5 px-2.5">{{ kw }}</span>
+            {% empty %}
+              {{ tender.keyword_matches }}
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Action Buttons -->
+      <div class="d-flex flex-column gap-2">
+        {% if tender.official_url %}
+          <a href="{{ tender.official_url }}" target="_blank" rel="noopener" class="btn btn-primary w-100 py-3">
+            <i class="bi bi-box-arrow-up-right"></i> Resmî / EKAP Sayfasını Aç
+          </a>
+        {% endif %}
+        <a href="{% url 'export_excel' %}?pk={{ tender.pk }}" class="btn btn-success w-100 py-3">
+          <i class="bi bi-file-earmark-excel-fill"></i> Bu İhaleyi Excel İndir
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
